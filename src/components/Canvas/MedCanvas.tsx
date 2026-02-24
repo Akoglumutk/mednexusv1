@@ -2,11 +2,10 @@
 import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Cloud, Loader2, CheckCircle2, Tag } from 'lucide-react'
+import { ArrowLeft, Cloud, Loader2, CheckCircle2, Tag, Trash2 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import debounce from 'lodash.debounce'
 
-// 1. DYNAMIC IMPORT (Crucial for Excalidraw in Next.js)
 const Excalidraw = dynamic(
   async () => (await import("@excalidraw/excalidraw")).Excalidraw,
   {
@@ -23,22 +22,19 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
   const router = useRouter()
   const supabase = createClient()
   
-  // METADATA STATE
   const [title, setTitle] = useState(initialData.title)
   const [tags, setTags] = useState<string[]>(initialData.tags || [])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false)
   
-  // EXCALIDRAW STATE
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null)
-  // We use a flag to prevent auto-saving during the initial data load
   const [isLoaded, setIsLoaded] = useState(false)
 
   const availableTags = ["Anatomy", "Histology", "Physiology", "Pathology", "T1C1", "T1C2", "Clinical"]
 
-  // --- SAVE LOGIC ---
   const saveToSupabase = async (elements: any, appState: any) => {
     setSaveStatus('saving')
+    // We strictly save only what Excalidraw gives us
     const snapshot = { elements, appState: { ...appState, collaborators: [] } }
     
     const { error } = await supabase
@@ -58,7 +54,6 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
     []
   )
 
-  // --- METADATA UPDATE ---
   const updateMeta = async (newTitle: string, newTags: string[]) => {
     setTitle(newTitle); setTags(newTags);
     await supabase.from('canvases').update({ title: newTitle, tags: newTags }).eq('id', initialData.id)
@@ -69,16 +64,22 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
     updateMeta(title, newTags)
   }
 
-  // --- INITIAL LOAD ---
+  // --- CLEAN SLATE LOAD LOGIC ---
   useEffect(() => {
-    if (excalidrawAPI && initialData.data && !isLoaded) {
-      // Check if the data is valid Excalidraw JSON (has 'elements')
-      if (initialData.data.elements) {
-        excalidrawAPI.updateScene({
-            elements: initialData.data.elements,
-            appState: initialData.data.appState
-        })
-      }
+    if (excalidrawAPI && !isLoaded) {
+      // We only try to load if the data looks perfectly like Excalidraw
+      // Otherwise, we intentionally do nothing (load blank) to avoid crashes
+      if (initialData.data && initialData.data.elements && Array.isArray(initialData.data.elements)) {
+        try {
+          excalidrawAPI.updateScene({
+              elements: initialData.data.elements,
+              appState: initialData.data.appState
+          })
+        } catch (e) {
+          console.warn("Resetting canvas due to format mismatch.")
+        }
+      } 
+      // Mark as loaded so we can start saving new edits
       setIsLoaded(true)
     }
   }, [excalidrawAPI, initialData.data, isLoaded])
@@ -86,15 +87,15 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
   return (
     <div className="fixed inset-0 w-screen h-[100dvh] bg-[#121212] overflow-hidden">
       
-      {/* --- HUD OVERLAY (Identical to before) --- */}
+      {/* HUD OVERLAY */}
       <div className="fixed bottom-4 left-4 right-4 md:right-auto md:bottom-6 md:left-6 z-[50] flex flex-col gap-3 pointer-events-none items-start">
         
-        {/* Back Button */}
+        {/* Row 1: Back Button */}
         <button onClick={() => router.push('/canvas')} className="pointer-events-auto p-3 bg-zinc-950/90 backdrop-blur border border-zinc-800 rounded-xl text-zinc-400 hover:text-white shadow-2xl">
           <ArrowLeft size={20} />
         </button>
 
-        {/* Controls Bar */}
+        {/* Row 2: Controls */}
         <div className="pointer-events-auto bg-zinc-950/90 backdrop-blur border border-zinc-800 rounded-xl p-2 shadow-2xl flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
            <input 
              value={title} onChange={(e) => updateMeta(e.target.value, tags)}
@@ -104,7 +105,6 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
            
            <div className="w-[1px] h-4 bg-zinc-800" />
            
-           {/* Tags */}
            <div className="relative">
               <button onClick={() => setIsTagMenuOpen(!isTagMenuOpen)} className={`p-1.5 rounded-lg border flex items-center gap-2 ${tags.length > 0 ? 'bg-amber-900/20 border-amber-500/30 text-amber-500' : 'border-transparent text-zinc-500'}`}>
                 <Tag size={14} />
@@ -125,20 +125,18 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
 
            <div className="w-[1px] h-4 bg-zinc-800" />
            
-           {/* Status */}
            <div className="flex items-center justify-center min-w-[24px]">
              {saveStatus === 'saving' ? <Loader2 size={14} className="animate-spin text-amber-500" /> : <Cloud size={14} className="text-emerald-500/50" />}
            </div>
         </div>
       </div>
 
-      {/* --- EXCALIDRAW ENGINE --- */}
       <div className="absolute inset-0 z-0 h-full w-full">
         <Excalidraw
             excalidrawAPI={(api) => setExcalidrawAPI(api)}
             theme="dark"
             onChange={(elements, appState) => {
-                // Only save if loaded to prevent overwriting with empty state
+                // Only save AFTER we have confirmed the load sequence is done
                 if (isLoaded) {
                     debouncedSave(elements, appState)
                 }
@@ -146,27 +144,19 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
             initialData={{
                 appState: { 
                     viewBackgroundColor: "#050505", 
-                    currentItemStrokeColor: "#fbbf24", // Amber default
+                    currentItemStrokeColor: "#fbbf24",
                     gridSize: 20
                 }
             }}
         />
       </div>
 
-      {/* CSS Overrides to match MedNexus Theme */}
       <style jsx global>{`
-        /* Hide Excalidraw's default menu/title to clean up UI */
         .App-menu__left, .App-top-bar { display: none !important; }
-        
-        /* Match Background */
         .excalidraw { --color-primary: #f59e0b; }
         .excalidraw .layer-ui__wrapper { background-color: transparent !important; }
-        
-        /* Adjust Toolbar Position (Move up on mobile) */
         @media (max-width: 768px) {
-            .App-bottom-bar {
-                margin-bottom: 80px !important;
-            }
+            .App-bottom-bar { margin-bottom: 80px !important; }
         }
       `}</style>
     </div>
