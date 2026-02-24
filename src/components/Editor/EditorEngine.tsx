@@ -1,6 +1,6 @@
 "use client"
-import { useEditor, EditorContent } from '@tiptap/react'
-import { BubbleMenu } from '@tiptap/react/menus'
+// 1. FIXED IMPORTS: BubbleMenu is exported directly from @tiptap/react in v2.4.0
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Typography from '@tiptap/extension-typography'
@@ -21,15 +21,15 @@ import BubbleMenuExtension from '@tiptap/extension-bubble-menu'
 
 // Custom Extensions
 import { MedTag, PageBreak, Spoiler } from '@/components/Editor/extensions'
-import { ImageOcclusion } from '@/components/Editor/ImageOcclusionExtension' // <--- 1. NEW IMPORT
+import { ImageOcclusion } from '@/components/Editor/ImageOcclusionExtension'
 
-import { useState, useCallback, useRef, useEffect } from 'react' // <--- 2. ADDED useEffect
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import debounce from 'lodash.debounce'
 import { 
   Bold, Italic, List, Heading2, Loader2, CheckCircle2, Save,
   ImageIcon, Table as TableIcon, AlertCircle, Scissors,
-  Eye, Sparkles, Plus, Trash2, Columns, Rows, // <--- 3. ADDED Eye Icon
+  Eye, Sparkles, Plus, Trash2, Columns, Rows,
   Maximize2, Minimize2, AlignCenter,
   Heading1,
   Underline,
@@ -51,14 +51,13 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
   const [title, setTitle] = useState(initialTitle)
 
-  // Oracle State'leri
+  // Oracle State
   const [isOracleOpen, setIsOracleOpen] = useState(false);
   const [rawInput, setRawInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   // ---------------------------------------------------------
   // ✦ THE NEURAL SIGNATURE ✦
-  // The "Ghost in the Machine" credit.
   // ---------------------------------------------------------
   useEffect(() => {
     console.log(
@@ -66,14 +65,10 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
       'background: #ef4444; color: #fff; border-radius: 3px 0 0 3px; padding: 4px 8px; font-weight: bold;',
       'background: #18181b; color: #a1a1aa; border-radius: 0 3px 3px 0; padding: 4px 8px; border: 1px solid #27272a; border-left: none;'
     );
-    console.log(
-      '%c ⌬ Structure is the mechanism of function.', 
-      'color: #71717a; font-style: italic; padding-left: 4px;'
-    );
   }, [])
   // ---------------------------------------------------------
 
-  // Running the Oracle
+  // Oracle Scribe Logic
   const runOracleScribe = async () => {
     if (!rawInput.trim()) return;
     setIsGenerating(true);
@@ -107,7 +102,6 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // The logic to handle the file (Standard Image)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -124,7 +118,6 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
     fileInputRef.current?.click();
   }
 
-  // Helper to insert Occlusion Image
   const addOcclusionImage = () => {
     const url = window.prompt('Enter URL for Study Image:')
     if (url) {
@@ -174,7 +167,7 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
       TextStyle, Color, Highlight.configure({ multicolor: true }), 
       Placeholder.configure({ placeholder: "Start your protocol..." }),
       MedTag, PageBreak, Spoiler,
-      ImageOcclusion // <--- 4. REGISTERED EXTENSION
+      ImageOcclusion
     ],
     content: initialContent || {},
     editorProps: {
@@ -194,8 +187,6 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
   const insertTable = () => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
   const insertPageBreak = () => editor?.commands.setPageBreak()
 
-  // NEW: CONVERT STANDARD IMAGE TO OCCLUSION
-  // --- 3. CONVERT STANDARD IMAGE TO OCCLUSION (PRESERVING WIDTH) ---
   const convertToOcclusion = () => {
     if (!editor) return
     const { state } = editor.view
@@ -204,12 +195,11 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
     
     if (node && node.type.name === 'image') {
       const src = node.attrs.src
-      // CAPTURE EXISTING WIDTH (if any)
       const width = node.attrs.width || '100%' 
       
       editor.chain().focus().deleteSelection().insertContent({ 
         type: 'imageOcclusion', 
-        attrs: { src, width } // PASS IT HERE
+        attrs: { src, width }
       }).run()
     }
   }
@@ -357,14 +347,12 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
         )}
   
       {/* 5. BUBBLE MENUS */}
-      {/* --- UPDATE THIS BUBBLE MENU --- */}
       <BubbleMenu 
         editor={editor} 
-        // FIX: Show menu for BOTH standard images AND occlusion images
         shouldShow={({ editor }) => editor.isActive('image') || editor.isActive('imageOcclusion')}
       >
          <div className="flex items-center gap-1 p-1.5 bg-zinc-900/95 backdrop-blur border border-zinc-700 rounded-xl shadow-xl">
-            {/* Standard Alignment Buttons - These work on the node wrapper */}
+            {/* Standard Alignment Buttons */}
             <button onClick={() => editor.chain().focus().updateAttributes(editor.isActive('imageOcclusion') ? 'imageOcclusion' : 'image', { class: 'float-left mr-4' }).run()} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"><AlignLeft size={16}/></button>
             
             <button onClick={() => editor.chain().focus().updateAttributes(editor.isActive('imageOcclusion') ? 'imageOcclusion' : 'image', { class: 'mx-auto block' }).run()} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"><AlignCenter size={16}/></button>
@@ -384,17 +372,6 @@ export default function EditorEngine({ initialContent, noteId, title: initialTit
                 <span className="text-[10px] font-bold uppercase tracking-wider pr-1">Study</span>
               </button>
             )}
-         </div>
-      </BubbleMenu>
-
-      <BubbleMenu 
-        editor={editor} 
-        shouldShow={({ editor }) => editor.isActive('image')}
-      >
-         <div className="flex items-center gap-1 p-1.5 bg-zinc-900/95 backdrop-blur border border-zinc-700 rounded-xl shadow-xl">
-            <button onClick={() => editor.chain().focus().updateAttributes('image', { class: 'float-left mr-4' }).run()} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"><AlignLeft size={16}/></button>
-            <button onClick={() => editor.chain().focus().updateAttributes('image', { class: 'mx-auto block' }).run()} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"><AlignCenter size={16}/></button>
-            <button onClick={() => editor.chain().focus().updateAttributes('image', { class: 'float-right ml-4' }).run()} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"><AlignRight size={16}/></button>
          </div>
       </BubbleMenu>
   
