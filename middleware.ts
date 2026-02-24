@@ -1,61 +1,73 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Statik dosyalara dokunma (CSS, JS, Resimler)
-  if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.includes('/api/') ||
-    request.nextUrl.pathname.includes('/favicon.ico') ||
-    request.nextUrl.pathname.match(/\.(svg|png|jpg|jpeg|gif|webp)$/)
-  ) {
-    return NextResponse.next()
-  }
-
-  let response = NextResponse.next({ request })
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
         },
       },
     }
   )
 
-  // Session kontrolü
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const isLoginPage = request.nextUrl.pathname === '/login'
-
-  // KURAL: Giriş yoksa ve login'de değilse -> YÖNLENDİR
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  // KURAL: Admin değilse -> KOV
-  if (user && user.email !== process.env.ADMIN_EMAIL) {
-    await supabase.auth.signOut()
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('error', 'unauthorized')
-    return NextResponse.redirect(url)
-  }
+  await supabase.auth.getUser()
 
   return response
 }
 
-// Matcher'ı en geniş hale getirdik, kontrolü yukarıda if ile yapıyoruz
 export const config = {
-  matcher: ['/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
