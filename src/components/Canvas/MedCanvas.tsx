@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Cloud, Loader2, CheckCircle2, Tag, Trash2 } from 'lucide-react'
+import { ArrowLeft, Cloud, Loader2, CheckCircle2, Tag, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import debounce from 'lodash.debounce'
 
@@ -21,8 +21,22 @@ const Excalidraw = dynamic(
 export default function MedCanvas({ initialData }: { initialData: any }) {
   const router = useRouter()
   const supabase = createClient()
-  
-  const [title, setTitle] = useState(initialData.title)
+
+  // --- 1. SAFETY CHECK: Prevent Crash if Data is Missing ---
+  if (!initialData) {
+    return (
+      <div className="h-screen w-screen bg-[#050505] flex flex-col items-center justify-center text-zinc-500 gap-4">
+        <AlertTriangle size={48} className="text-amber-900" />
+        <h2 className="text-xl font-serif">Canvas Unavailable</h2>
+        <button onClick={() => router.push('/canvas')} className="px-4 py-2 bg-zinc-900 rounded-lg hover:text-white">
+          Return to Dashboard
+        </button>
+      </div>
+    )
+  }
+
+  // --- 2. SAFE STATE INITIALIZATION ---
+  const [title, setTitle] = useState(initialData.title || "Untitled")
   const [tags, setTags] = useState<string[]>(initialData.tags || [])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false)
@@ -34,7 +48,6 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
 
   const saveToSupabase = async (elements: any, appState: any) => {
     setSaveStatus('saving')
-    // We strictly save only what Excalidraw gives us
     const snapshot = { elements, appState: { ...appState, collaborators: [] } }
     
     const { error } = await supabase
@@ -67,8 +80,7 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
   // --- CLEAN SLATE LOAD LOGIC ---
   useEffect(() => {
     if (excalidrawAPI && !isLoaded) {
-      // We only try to load if the data looks perfectly like Excalidraw
-      // Otherwise, we intentionally do nothing (load blank) to avoid crashes
+      // Validate Data Structure before loading
       if (initialData.data && initialData.data.elements && Array.isArray(initialData.data.elements)) {
         try {
           excalidrawAPI.updateScene({
@@ -79,7 +91,6 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
           console.warn("Resetting canvas due to format mismatch.")
         }
       } 
-      // Mark as loaded so we can start saving new edits
       setIsLoaded(true)
     }
   }, [excalidrawAPI, initialData.data, isLoaded])
@@ -136,7 +147,6 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
             excalidrawAPI={(api) => setExcalidrawAPI(api)}
             theme="dark"
             onChange={(elements, appState) => {
-                // Only save AFTER we have confirmed the load sequence is done
                 if (isLoaded) {
                     debouncedSave(elements, appState)
                 }
