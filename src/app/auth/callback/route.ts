@@ -4,17 +4,19 @@ import { createClient } from '@/utils/supabase/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // Eğer giriş yapıldıktan sonra yönlendirilecek bir sayfa varsa onu al, yoksa anasayfaya (/) git
+  // if "next" is in param, use it as the redirect URL
   const next = searchParams.get('next') ?? '/'
 
   if (code) {
-    const supabase = createClient()
+    // FIX: Add 'await' here because createClient is async in Next.js 15
+    const supabase = await createClient()
+    
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Hata olursa kullanıcıyı hata sayfasına yönlendir
+  // return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }
