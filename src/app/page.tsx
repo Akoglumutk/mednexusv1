@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { BookText, PenTool, Smartphone, Cpu, Settings, LogOut, User, Home, Book, Pen, PenLine, Phone, CircuitBoard, LucideCircuitBoard, Gpu, Sparkle, Sparkles } from 'lucide-react'
+import { BookText, PenTool, Smartphone, Cpu, Settings, LogOut, User, Home, Book, Pen, PenLine, Phone, CircuitBoard, LucideCircuitBoard, Sparkle, Sparkles } from 'lucide-react'
 import { QuickUpdate } from '@/components/QuickUpdate'
 import { CountdownCard } from '@/components/Dashboard/CountdownCard'
 import { ScheduleCard } from '@/components/Dashboard/ScheduleCard'
