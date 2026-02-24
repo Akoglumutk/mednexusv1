@@ -1,30 +1,32 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class"],
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  // tailwind.config.ts
   theme: {
     extend: {
       colors: {
-        background: "#050505", // Saf Siyah (Zemin)
-        paper: "#121212",      // Çok Koyu Gri (Kartlar)
-        gold: "#D4AF37",       // Antik Altın (Vurgu)
-        crimson: "#991B1B",    // Koyu Kırmızı (Uyarı/Önemli)
-        ember: "#F59E0B",      // Kehribar (High Yield Akkoru)
-        medText: "#E5E7EB",    // Parlak Gri (Okunabilirlik)
-        medMuted: "#6B7280",   // Sönük Gri
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
       },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-      }
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'), // <-- ADD THIS LINE
-  ],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };
 export default config;
