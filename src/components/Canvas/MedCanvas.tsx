@@ -34,6 +34,9 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
   }
 
   const handleMount = (editor: Editor) => {
+    // 1. THE GRID FIX: Enable programmatically here
+    editor.updateInstanceState({ isGridMode: true })
+
     if (initialData.data && Object.keys(initialData.data).length > 0) {
       try { loadSnapshot(editor.store, initialData.data) } catch (e) { console.error(e) }
     }
@@ -94,8 +97,7 @@ export default function MedCanvas({ initialData }: { initialData: any }) {
           onMount={handleMount}
           options={{ maxPages: 1 }}
           inferDarkMode={true}
-          // 1. THE GRID FIX: Explicitly enabling it via prop
-          showGrid={true}
+          // REMOVED: showGrid={true} to fix build error
         />
       </div>
 
