@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Base Shadcn Variables */
+    /* Base Variables */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -34,7 +34,6 @@
   }
 
   .dark {
-    /* Dark Mode Overrides */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -59,16 +58,19 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* FIXED: Use standard CSS to avoid Tailwind generation errors */
+    border-color: hsl(var(--border)); 
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    /* FIXED: Use standard CSS variables */
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: Arial, Helvetica, sans-serif;
   }
 }
 
 /* =========================================
-   SCROLLBARS & UTILS
+   UTILITIES & SCROLLBAR
    ========================================= */
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
@@ -88,22 +90,21 @@
 }
 
 /* =========================================
-   EDITOR TYPOGRAPHY ENGINE (Tiptap)
+   EDITOR STYLES (Tiptap)
    ========================================= */
 
-/* The A4 Page Container */
+/* A4 Page Container */
 .editor-a4-page {
   width: 100%;
   max-width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  background-color: #0a0a0a; /* Dark Paper */
+  background-color: #0a0a0a;
   padding: 20mm;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Mobile Adjustments for Editor */
 @media (max-width: 768px) {
   .editor-a4-page {
     padding: 1rem;
@@ -111,7 +112,7 @@
   }
 }
 
-/* --- FORCE VISIBILITY (Crucial for Tiptap) --- */
+/* Force Text Visibility */
 .ProseMirror {
   outline: none !important;
   color: #d4d4d8;
@@ -127,7 +128,6 @@
   margin-bottom: 1rem !important;
   line-height: 1.2 !important;
   color: #f4f4f5 !important;
-  font-family: 'Arial', sans-serif !important;
   border-bottom: 2px solid #333;
 }
 
@@ -139,23 +139,8 @@
   margin-bottom: 0.75rem !important;
   color: #e4e4e7 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-family: 'Arial', sans-serif !important;
 }
 
-.ProseMirror h3 {
-  display: block !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  margin-top: 1.25rem !important;
-  color: #a1a1aa !important;
-}
-
-.ProseMirror p {
-  display: block !important;
-  margin-bottom: 1rem !important;
-}
-
-/* Lists */
 .ProseMirror ul {
   display: block !important;
   list-style-type: disc !important;
@@ -175,26 +160,8 @@
   margin-bottom: 0.5rem !important;
 }
 
-/* Tables */
-.ProseMirror table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1.5rem 0;
-  font-size: 0.9rem;
-}
-.ProseMirror th, .ProseMirror td {
-  border: 1px solid #3f3f46;
-  padding: 10px 12px;
-  text-align: left;
-}
-.ProseMirror th {
-  background-color: #18181b;
-  font-weight: 700;
-  color: #fbbf24; /* Amber headers */
-}
-
-/* Images & Media */
-.ProseMirror img {
+/* Images */
+.ProseMirror img, .med-img {
   display: block !important;
   max-width: 100% !important;
   height: auto !important;
@@ -202,16 +169,7 @@
   border-radius: 4px;
 }
 
-.med-img {
-  display: block !important;
-  max-width: 100% !important;
-}
-
-/* =========================================
-   MEDNEXUS COMPONENTS (Oracle, Tags, etc.)
-   ========================================= */
-
-/* Callout Blocks */
+/* Callouts & Tags */
 .callout-block {
   border-left: 4px solid #f59e0b;
   background: rgba(245, 158, 11, 0.05);
@@ -220,102 +178,43 @@
   margin: 2rem 0;
 }
 
-/* Page Break Indicator (Visual) */
-.page-break-indicator {
-  height: 2rem;
-  margin: 2rem -20mm;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgba(212, 175, 55, 0.1) 10px,
-    rgba(212, 175, 55, 0.1) 20px
-  );
-  border-top: 1px dashed rgba(212, 175, 55, 0.3);
-  border-bottom: 1px dashed rgba(212, 175, 55, 0.3);
-  page-break-after: always;
-  break-after: page;
-}
-
-/* Med Tags */
 .med-tag-component {
   color: var(--tag-color);
   border: 1px solid var(--tag-color);
   background-color: color-mix(in srgb, var(--tag-color), transparent 90%);
   padding: 1px 6px;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: monospace;
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 4px;
   display: inline-flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Image Occlusion Box */
+/* Occlusion Box */
 .occlusion-box {
   position: absolute;
   background-color: #000;
-  border: 1px solid #ef4444; /* Red border for editor visibility */
+  border: 1px solid #ef4444;
   z-index: 10;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
-
 .occlusion-box.revealed {
   background-color: rgba(168, 85, 247, 0.2); 
   border-color: #a855f7;
 }
 
-/* Oracle Responses */
-.oracle-response {
-  background-color: #18181b;
-  border-left: 4px solid #D4AF37;
-  padding: 15px;
-  margin: 20px 0;
-  font-style: italic;
-  color: #e4e4e7;
-}
-
-/* =========================================
-   PRINT STYLES (PDF Export)
-   ========================================= */
+/* Print Overrides */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  
+  body { background: white !important; color: black !important; }
   .editor-a4-page {
     background: white !important;
     color: black !important;
     box-shadow: none !important;
-    margin: 0 !important;
     border: none !important;
     width: 100% !important;
     max-width: none !important;
     padding: 0 !important;
-  }
-
-  /* Hide UI elements */
-  .page-break-indicator {
-    opacity: 0;
-    height: 0;
-    margin: 0;
-    border: none;
-    page-break-after: always;
-  }
-
-  /* Force Text Colors for Print */
-  .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror p, .ProseMirror li {
-    color: black !important;
-  }
-  
-  /* Avoid breaking images */
-  img, figure, table {
-    page-break-inside: avoid;
   }
 }
